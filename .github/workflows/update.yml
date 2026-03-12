@@ -1,0 +1,94 @@
+name: Update
+
+on:
+  schedule:
+    - cron: "0 12 * * 1" # every Monday at noon
+  workflow_dispatch: null
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: cachix/install-nix-action@v31
+
+      - name: Check for new version
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          current=$(grep 'version = ' flake.nix | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          latest=$(gh release view --repo microsoft/vscode --json tagName -q '.tagName')
+          echo "current=$current" >> "$GITHUB_OUTPUT"
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+          if [ "$current" != "$latest" ]; then
+            echo "update=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Get commit for version
+        if: steps.check.outputs.update == 'true'
+        id: commit
+        run: |
+          commit=$(curl -s "https://update.code.visualstudio.com/api/commits/${{ steps.check.outputs.latest }}/cli-alpine-x64/stable" | jq -r '.[0]')
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+
+      - name: Update flake.nix
+        if: steps.check.outputs.update == 'true'
+        env:
+          VERSION: ${{ steps.check.outputs.latest }}
+          COMMIT: ${{ steps.commit.outputs.commit }}
+        run: |
+          sed -i "s/version = \".*\"/version = \"${VERSION}\"/" flake.nix
+          sed -i "s/commit = \".*\"/commit = \"${COMMIT}\"/" flake.nix
+
+          declare -A archives=(
+            ["aarch64-linux"]="vscode_cli_alpine_arm64_cli.tar.gz"
+            ["x86_64-linux"]="vscode_cli_alpine_x64_cli.tar.gz"
+            ["aarch64-darwin"]="vscode_cli_darwin_arm64_cli.zip"
+            ["x86_64-darwin"]="vscode_cli_darwin_x64_cli.zip"
+          )
+
+          for system in "${!archives[@]}"; do
+            archive="${archives[$system]}"
+            url="https://vscode.download.prss.microsoft.com/dbazure/download/stable/${COMMIT}/${archive}"
+            hash=$(nix store prefetch-file --json "$url" | jq -r '.hash')
+            old_pattern="hash = \"sha256-[^\"]*\""
+            # Update the hash for this system's block
+            python3 -c "
+          import re
+          with open('flake.nix') as f:
+              content = f.read()
+          # Find the block for this system and update its hash
+          pattern = r'(${system} = \{[^}]*hash = \")sha256-[^\"]*(\";)'
+          content = re.sub(pattern, r'\g<1>${hash}\2', content, flags=re.DOTALL)
+          with open('flake.nix', 'w') as f:
+              f.write(content)
+          "
+          done
+
+      - name: Create pull request
+        if: steps.check.outputs.update == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.check.outputs.latest }}
+          CURRENT: ${{ steps.check.outputs.current }}
+        run: |
+          existing=$(gh pr list --search "in:title Update VS Code CLI to ${VERSION}" --json number -q '.[0].number')
+          if [ -n "$existing" ]; then
+            echo "PR #${existing} already exists for v${VERSION}"
+            exit 0
+          fi
+
+          branch="update-vscode-cli-${VERSION}"
+          git checkout -b "$branch"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add flake.nix
+          git commit -m "Update VS Code CLI to ${VERSION}"
+          git push -u origin "$branch"
+          gh pr create \
+            --title "Update VS Code CLI to ${VERSION}" \
+            --body "Automated update of VS Code CLI from ${CURRENT} to ${VERSION}."
