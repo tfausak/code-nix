@@ -17,5 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: cachix/install-nix-action@v31
-      - run: nix build
+      - run: nix build --impure
+        env:
+          NIXPKGS_ALLOW_UNFREE: 1
       - run: result/bin/code --version
