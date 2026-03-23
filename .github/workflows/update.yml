@@ -32,7 +32,7 @@ jobs:
         if: steps.check.outputs.update == 'true'
         id: commit
         run: |
-          commit=$(curl -s "https://update.code.visualstudio.com/api/commits/${{ steps.check.outputs.latest }}/cli-alpine-x64/stable" | jq -r '.[0]')
+          commit=$(curl -s "https://update.code.visualstudio.com/api/update/cli-alpine-x64/stable/latest" | jq -r '.version')
           echo "commit=$commit" >> "$GITHUB_OUTPUT"
 
       - name: Update flake.nix
