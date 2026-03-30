@@ -62,7 +62,7 @@ jobs:
           with open('flake.nix') as f:
               content = f.read()
           # Find the block for this system and update its hash
-          pattern = r'(${system} = \{[^}]*hash = \")sha256-[^\"]*(\";)'
+          pattern = r'(${system} = \{.*?hash = \")sha256-[^\"]*(\";)'
           content = re.sub(pattern, r'\g<1>${hash}\2', content, flags=re.DOTALL)
           with open('flake.nix', 'w') as f:
               f.write(content)
