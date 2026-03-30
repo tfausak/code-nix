@@ -5,8 +5,8 @@
 
   outputs = { self, nixpkgs }:
     let
-      version = "1.111.0";
-      commit = "ce099c1ed25d9eb3076c11e4a280f3eb52b4fbeb";
+      version = "1.113.0";
+      commit = "cfbea10c5ffb233ea9177d34726e6056e89913dc";
 
       sources = {
         aarch64-linux = {
