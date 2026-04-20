@@ -17,29 +17,23 @@ jobs:
 
       - name: Check for new version
         id: check
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           current=$(grep 'version = ' flake.nix | head -1 | sed 's/.*"\(.*\)".*/\1/')
-          latest=$(gh release view --repo microsoft/vscode --json tagName -q '.tagName')
+          resp=$(curl -s "https://update.code.visualstudio.com/api/update/cli-alpine-x64/stable/latest")
+          latest=$(echo "$resp" | jq -r '.productVersion')
+          commit=$(echo "$resp" | jq -r '.version')
           echo "current=$current" >> "$GITHUB_OUTPUT"
           echo "latest=$latest" >> "$GITHUB_OUTPUT"
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
           if [ "$current" != "$latest" ]; then
             echo "update=true" >> "$GITHUB_OUTPUT"
           fi
-
-      - name: Get commit for version
-        if: steps.check.outputs.update == 'true'
-        id: commit
-        run: |
-          commit=$(curl -s "https://update.code.visualstudio.com/api/update/cli-alpine-x64/stable/latest" | jq -r '.version')
-          echo "commit=$commit" >> "$GITHUB_OUTPUT"
 
       - name: Update flake.nix
         if: steps.check.outputs.update == 'true'
         env:
           VERSION: ${{ steps.check.outputs.latest }}
-          COMMIT: ${{ steps.commit.outputs.commit }}
+          COMMIT: ${{ steps.check.outputs.commit }}
         run: |
           sed -i "s/version = \".*\"/version = \"${VERSION}\"/" flake.nix
           sed -i "s/commit = \".*\"/commit = \"${COMMIT}\"/" flake.nix
