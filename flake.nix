@@ -5,25 +5,25 @@
 
   outputs = { self, nixpkgs }:
     let
-      version = "1.134.0";
-      commit = "110a328ea54b42367b803ec53ee0bf52ef26b419";
+      version = "1.135.0";
+      commit = "08d4889f9ec4a1685d257b9b95de036c8e1ce1e5";
 
       sources = {
         aarch64-linux = {
           url = "https://vscode.download.prss.microsoft.com/dbazure/download/stable/${commit}/vscode_cli_alpine_arm64_cli.tar.gz";
-          hash = "sha256-lhLPlpbNSBSsPGEWMRvGY+XxNpVPdwekVESQL+FWVOY=";
+          hash = "sha256-HrlZRRbA0omp3cXwcjj6ocaGJWPGy8mRHmUCdN5vcrM=";
         };
         x86_64-linux = {
           url = "https://vscode.download.prss.microsoft.com/dbazure/download/stable/${commit}/vscode_cli_alpine_x64_cli.tar.gz";
-          hash = "sha256-tMuE2RDNdYJ8nvn08C6nvCtrwHsYARFJiXX0NtEKiQE=";
+          hash = "sha256-2kY597ne7nMUAAZoDKrRFc1ypJdQmjUlgKL6vjkbZus=";
         };
         aarch64-darwin = {
           url = "https://vscode.download.prss.microsoft.com/dbazure/download/stable/${commit}/vscode_cli_darwin_arm64_cli.zip";
-          hash = "sha256-X05pcC1HkKMtVjtRHK0fyjLF+aiVqg7Gj/k7D8y7+00=";
+          hash = "sha256-Zlfo/rJf7JBBOpFNzfmeR2fmnAsffENp07s+rG26ffw=";
         };
         x86_64-darwin = {
           url = "https://vscode.download.prss.microsoft.com/dbazure/download/stable/${commit}/vscode_cli_darwin_x64_cli.zip";
-          hash = "sha256-sRCE7qWFbU9kaOZkNdAma7zZX68JOqkXeJJu/WYxQFk=";
+          hash = "sha256-1Rp9RjATZGwU5ix6Uca6o7f5BMner/Hnu/0PpECX5RE=";
         };
       };
 
